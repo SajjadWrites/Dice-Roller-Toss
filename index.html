@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -203,8 +202,8 @@
             <!-- LEFT & CENTER MAIN INTERACTIVE STAGE (8 cols) -->
             <div class="lg:col-span-8 space-y-6">
 
-                <!-- Player Selection Bar -->
-                <div class="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-2xl p-4 shadow-xl">
+                <!-- Player Selection Bar (Visible only for Dice mode) -->
+                <div id="playerBarContainer" class="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-2xl p-4 shadow-xl">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center">
                             <i class="fa-solid fa-users text-indigo-400 mr-2"></i> Active Roller
@@ -223,8 +222,51 @@
                 <!-- INTERACTIVE SECTION 1: DICE ROLLER -->
                 <div id="diceSection" class="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-2xl p-6 shadow-xl relative overflow-hidden">
                     
-                    <!-- Control Settings Bar -->
-                    <div class="space-y-4 mb-6">
+                    <!-- Visual Interactive Animation Stage (Moved to Top) -->
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-8 min-h-[300px] flex flex-col items-center justify-center relative perspective-1000 overflow-hidden shadow-inner">
+                        <!-- Dice Display Grid Container -->
+                        <div id="diceArena" class="flex flex-wrap items-center justify-center gap-6 max-w-full my-auto py-4">
+                            <!-- Animated Dice components inserted via JS -->
+                        </div>
+
+                        <!-- Action Roll Button -->
+                        <div class="mt-6 z-10 w-full sm:w-auto">
+                            <button id="rollDiceBtn" onclick="rollDice()" class="w-full sm:w-64 py-3.5 px-8 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-base rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform active:scale-95 transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-dice-three text-xl"></i>
+                                <span id="rollBtnText">ROLL DICE</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dice Results Display Banner -->
+                    <div id="diceResultsBanner" class="mt-4 p-4 rounded-xl bg-slate-900/90 border border-indigo-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-extrabold text-2xl">
+                                ∑
+                            </div>
+                            <div>
+                                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Sum</span>
+                                <div id="diceTotalDisplay" class="text-3xl font-black text-white">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Individual Dice Value Breakdown Pills -->
+                        <div class="flex-1 w-full sm:w-auto text-right">
+                            <span class="text-xs font-semibold text-slate-400 block mb-1">INDIVIDUAL BREAKDOWN</span>
+                            <div id="diceBreakdownContainer" class="flex flex-wrap justify-end gap-1.5">
+                                <span class="text-xs text-slate-500 italic">Ready to roll...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Turn Status & Consecutive 6 Alert Banner -->
+                    <div id="turnStatusBanner" class="mt-3 p-3 rounded-xl bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-between text-xs font-semibold text-indigo-300">
+                        <span id="turnStatusText"><i class="fa-solid fa-arrows-rotate mr-1.5"></i> Turn alternating is active.</span>
+                        <span id="consecutiveSixPill" class="px-2.5 py-1 rounded-md bg-indigo-900/80 text-indigo-200 border border-indigo-700/60">Consecutive 6s: 0/3</span>
+                    </div>
+
+                    <!-- Control Settings Bar (Moved to Bottom) -->
+                    <div class="space-y-4 mt-6 pt-5 border-t border-slate-700/50">
                         <!-- Dice Type Selectors -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-400 mb-2">SELECT DICE TYPE</label>
@@ -274,65 +316,12 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Visual Interactive Animation Stage -->
-                    <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-8 min-h-[300px] flex flex-col items-center justify-center relative perspective-1000 overflow-hidden shadow-inner">
-                        <!-- Dice Display Grid Container -->
-                        <div id="diceArena" class="flex flex-wrap items-center justify-center gap-6 max-w-full my-auto py-4">
-                            <!-- Animated Dice components inserted via JS -->
-                        </div>
-
-                        <!-- Action Roll Button -->
-                        <div class="mt-6 z-10 w-full sm:w-auto">
-                            <button id="rollDiceBtn" onclick="rollDice()" class="w-full sm:w-64 py-3.5 px-8 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-base rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform active:scale-95 transition flex items-center justify-center space-x-2">
-                                <i class="fa-solid fa-dice-three text-xl"></i>
-                                <span id="rollBtnText">ROLL DICE</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Dice Results Display Banner -->
-                    <div id="diceResultsBanner" class="mt-6 p-4 rounded-xl bg-slate-900/90 border border-indigo-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-extrabold text-2xl">
-                                ∑
-                            </div>
-                            <div>
-                                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Sum</span>
-                                <div id="diceTotalDisplay" class="text-3xl font-black text-white">0</div>
-                            </div>
-                        </div>
-
-                        <!-- Individual Dice Value Breakdown Pills -->
-                        <div class="flex-1 w-full sm:w-auto text-right">
-                            <span class="text-xs font-semibold text-slate-400 block mb-1">INDIVIDUAL BREAKDOWN</span>
-                            <div id="diceBreakdownContainer" class="flex flex-wrap justify-end gap-1.5">
-                                <span class="text-xs text-slate-500 italic">Ready to roll...</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Turn Status & Consecutive 6 Alert Banner -->
-                    <div id="turnStatusBanner" class="mt-3 p-3 rounded-xl bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-between text-xs font-semibold text-indigo-300">
-                        <span id="turnStatusText"><i class="fa-solid fa-arrows-rotate mr-1.5"></i> Turn alternating is active.</span>
-                        <span id="consecutiveSixPill" class="px-2.5 py-1 rounded-md bg-indigo-900/80 text-indigo-200 border border-indigo-700/60">Consecutive 6s: 0/3</span>
-                    </div>
                 </div>
 
                 <!-- INTERACTIVE SECTION 2: COIN FLIPPER (Hidden by default) -->
                 <div id="coinSection" class="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-2xl p-6 shadow-xl hidden">
                     
-                    <!-- Coin Quantity Controls -->
-                    <div class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-slate-700/40 mb-6">
-                        <span class="text-xs font-semibold text-slate-400">NUMBER OF COINS:</span>
-                        <div class="flex items-center space-x-2">
-                            <button onclick="adjustCoinCount(-1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-slate-200 border border-slate-600 transition">-</button>
-                            <span id="coinCountDisplay" class="font-extrabold text-lg text-amber-400 w-8 text-center">1</span>
-                            <button onclick="adjustCoinCount(1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-slate-200 border border-slate-600 transition">+</button>
-                        </div>
-                    </div>
-
-                    <!-- Animated Coin Arena -->
+                    <!-- Animated Coin Arena (Moved to Top) -->
                     <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-8 min-h-[300px] flex flex-col items-center justify-center relative perspective-1000 shadow-inner">
                         <div id="coinArena" class="flex flex-wrap items-center justify-center gap-8 max-w-full my-auto py-4">
                             <!-- Coins dynamically injected -->
@@ -347,7 +336,7 @@
                     </div>
 
                     <!-- Coin Result Banner -->
-                    <div class="mt-6 p-4 rounded-xl bg-slate-900/90 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="mt-4 p-4 rounded-xl bg-slate-900/90 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div class="flex items-center space-x-4">
                             <div class="flex space-x-2">
                                 <span class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold text-sm">
@@ -361,6 +350,16 @@
 
                         <div id="coinOutcomeSummary" class="text-right text-sm font-semibold text-slate-300">
                             Click flip to start!
+                        </div>
+                    </div>
+
+                    <!-- Coin Quantity Controls (Moved to Bottom) -->
+                    <div class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-slate-700/40 mt-6 pt-3">
+                        <span class="text-xs font-semibold text-slate-400">NUMBER OF COINS:</span>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="adjustCoinCount(-1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-slate-200 border border-slate-600 transition">-</button>
+                            <span id="coinCountDisplay" class="font-extrabold text-lg text-amber-400 w-8 text-center">1</span>
+                            <button onclick="adjustCoinCount(1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-slate-200 border border-slate-600 transition">+</button>
                         </div>
                     </div>
                 </div>
@@ -583,17 +582,23 @@
             activeMode = mode;
             const diceSec = document.getElementById('diceSection');
             const coinSec = document.getElementById('coinSection');
+            const playerBar = document.getElementById('playerBarContainer');
+            const headerPlayerBadge = document.getElementById('headerActivePlayerBadge')?.parentElement;
             const tabDice = document.getElementById('tabDiceBtn');
             const tabCoin = document.getElementById('tabCoinBtn');
 
             if (mode === 'dice') {
                 diceSec.classList.remove('hidden');
                 coinSec.classList.add('hidden');
+                if (playerBar) playerBar.classList.remove('hidden');
+                if (headerPlayerBadge) headerPlayerBadge.classList.remove('hidden');
                 tabDice.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-indigo-600 text-white shadow-md';
                 tabCoin.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white';
             } else {
                 diceSec.classList.add('hidden');
                 coinSec.classList.remove('hidden');
+                if (playerBar) playerBar.classList.add('hidden');
+                if (headerPlayerBadge) headerPlayerBadge.classList.add('hidden');
                 tabCoin.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-amber-600 text-white shadow-md';
                 tabDice.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white';
             }
@@ -1035,9 +1040,9 @@
 
             const item = {
                 id: 'h_' + Date.now(),
-                playerId: activePlayer.id,
-                playerName: activePlayer.name,
-                playerColor: activePlayer.color,
+                playerId: category === 'COIN' ? 'COIN_GENERIC' : activePlayer.id,
+                playerName: category === 'COIN' ? 'Coin Flip' : activePlayer.name,
+                playerColor: category === 'COIN' ? '#f59e0b' : activePlayer.color,
                 category: category,
                 data: data,
                 timestamp: timeStr
@@ -1126,4 +1131,3 @@
     </script>
 </body>
 </html>
-```
