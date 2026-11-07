@@ -311,6 +311,12 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Turn Status & Consecutive 6 Alert Banner -->
+                    <div id="turnStatusBanner" class="mt-3 p-3 rounded-xl bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-between text-xs font-semibold text-indigo-300">
+                        <span id="turnStatusText"><i class="fa-solid fa-arrows-rotate mr-1.5"></i> Turn alternating is active.</span>
+                        <span id="consecutiveSixPill" class="px-2.5 py-1 rounded-md bg-indigo-900/80 text-indigo-200 border border-indigo-700/60">Consecutive 6s: 0/3</span>
+                    </div>
                 </div>
 
                 <!-- INTERACTIVE SECTION 2: COIN FLIPPER (Hidden by default) -->
@@ -442,6 +448,9 @@
         let coinCount = 1;
         let isRolling = false;
         let selectedColor = '#6366f1';
+
+        // Consecutive 6s tracker for current player round
+        let consecutiveSixes = 0;
 
         // Predefined Players list
         let players = [
@@ -604,8 +613,44 @@
         }
 
         function setActivePlayer(id) {
+            if (activePlayerId !== id) {
+                consecutiveSixes = 0;
+            }
             activePlayerId = id;
+            updateTurnStatusDisplay();
             renderPlayers();
+        }
+
+        function nextPlayerTurn() {
+            if (players.length <= 1) return;
+            const currentIndex = players.findIndex(p => p.id === activePlayerId);
+            const nextIndex = (currentIndex + 1) % players.length;
+            activePlayerId = players[nextIndex].id;
+            consecutiveSixes = 0;
+            updateTurnStatusDisplay();
+            renderPlayers();
+        }
+
+        function updateTurnStatusDisplay(alertMsg = null) {
+            const statusText = document.getElementById('turnStatusText');
+            const sixPill = document.getElementById('consecutiveSixPill');
+            
+            if (alertMsg) {
+                statusText.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400 mr-1.5"></i> ${alertMsg}`;
+            } else if (consecutiveSixes > 0) {
+                statusText.innerHTML = `<i class="fa-solid fa-bolt text-amber-400 mr-1.5"></i> <strong>Bonus Roll Earned!</strong> (Rolled a 6)`;
+            } else {
+                statusText.innerHTML = `<i class="fa-solid fa-arrows-rotate mr-1.5"></i> Next up: <strong>${escapeHtml((players.find(p => p.id === activePlayerId) || players[0]).name)}</strong>`;
+            }
+
+            if (sixPill) {
+                sixPill.textContent = `Consecutive 6s: ${consecutiveSixes}/3`;
+                sixPill.className = consecutiveSixes === 2 
+                    ? 'px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
+                    : consecutiveSixes === 3
+                    ? 'px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold'
+                    : 'px-2.5 py-1 rounded-md bg-indigo-900/80 text-indigo-200 border border-indigo-700/60';
+            }
         }
 
         /* Edit Player Name Prompt */
@@ -803,12 +848,39 @@
                 playSynthesizedSound('win');
 
                 displayDiceResults(results);
+
+                const hasSix = results.includes(6);
+                let roundNullified = false;
+
+                if (hasSix) {
+                    consecutiveSixes++;
+                    if (consecutiveSixes >= 3) {
+                        roundNullified = true;
+                    }
+                } else {
+                    consecutiveSixes = 0;
+                }
+
+                // Log roll history record
                 addHistoryRecord('DICE', {
                     diceType: selectedDiceType,
                     count: diceCount,
                     results: results,
-                    total: results.reduce((a, b) => a + b, 0)
+                    total: roundNullified ? 0 : results.reduce((a, b) => a + b, 0),
+                    nullified: roundNullified,
+                    bonusRoll: hasSix && !roundNullified
                 });
+
+                if (roundNullified) {
+                    updateTurnStatusDisplay(`3 SIXES IN A ROW! Round nullified for ${escapeHtml((players.find(p => p.id === activePlayerId) || players[0]).name)}.`);
+                    setTimeout(() => {
+                        nextPlayerTurn();
+                    }, 1800);
+                } else if (hasSix) {
+                    updateTurnStatusDisplay();
+                } else {
+                    nextPlayerTurn();
+                }
             }, 1250);
         }
 
@@ -818,7 +890,7 @@
 
             const breakdown = document.getElementById('diceBreakdownContainer');
             breakdown.innerHTML = results.map(val => `
-                <span class="px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-bold text-xs">
+                <span class="px-2.5 py-1 rounded-lg ${val === 6 ? 'bg-amber-500/30 border-amber-400 text-amber-200 animate-pulse' : 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'} border font-bold text-xs">
                     ${val}
                 </span>
             `).join('');
@@ -957,10 +1029,19 @@
             container.innerHTML = filteredHistory.map(item => {
                 let detailsHTML = '';
                 if (item.category === 'DICE') {
+                    const statusBadge = item.data.nullified 
+                        ? `<span class="text-xs font-bold text-rose-400 border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 rounded">NULLIFIED (3x 6s)</span>`
+                        : item.data.bonusRoll 
+                        ? `<span class="text-xs font-bold text-amber-400 border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 rounded">BONUS ROLL (6!)</span>`
+                        : '';
+
                     detailsHTML = `
                         <div class="flex items-center justify-between mt-1.5">
                             <span class="text-xs text-slate-400 font-semibold">${item.data.count}x ${item.data.diceType}: [${item.data.results.join(', ')}]</span>
-                            <span class="text-sm font-extrabold text-indigo-400">Total: ${item.data.total}</span>
+                            <div class="flex items-center space-x-2">
+                                ${statusBadge}
+                                <span class="text-sm font-extrabold ${item.data.nullified ? 'line-through text-slate-500' : 'text-indigo-400'}">Total: ${item.data.total}</span>
+                            </div>
                         </div>
                     `;
                 } else {
