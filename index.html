@@ -473,47 +473,86 @@
                 }
 
                 if (type === 'dice') {
-                    // Dice clatter noise synthesized effect
-                    for (let i = 0; i < 4; i++) {
-                        setTimeout(() => {
-                            const osc = audioCtx.createOscillator();
-                            const gain = audioCtx.createGain();
-                            osc.type = 'triangle';
-                            osc.frequency.setValueAtTime(200 + Math.random() * 300, audioCtx.currentTime);
-                            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-                            osc.connect(gain);
-                            gain.connect(audioCtx.destination);
-                            osc.start();
-                            osc.stop(audioCtx.currentTime + 0.08);
-                        }, i * 150 + Math.random() * 50);
+                    // Realistic Dice Tumbling & Clattering Effect
+                    // Simulates multiple high-frequency impact thuds and clicks of rolling dice
+                    const now = audioCtx.currentTime;
+                    const numImpacts = 6 + Math.floor(Math.random() * 4);
+                    
+                    for (let i = 0; i < numImpacts; i++) {
+                        const delay = i * (0.07 + Math.random() * 0.05);
+                        
+                        // Noise burst for surface impact clatter
+                        const bufferSize = audioCtx.sampleRate * 0.02;
+                        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                        const output = buffer.getChannelData(0);
+                        for (let j = 0; j < bufferSize; j++) {
+                            output[j] = Math.random() * 2 - 1;
+                        }
+
+                        const noise = audioCtx.createBufferSource();
+                        noise.buffer = buffer;
+
+                        // Bandpass filter to model solid plastic/wooden dice material resonating
+                        const filter = audioCtx.createBiquadFilter();
+                        filter.type = 'bandpass';
+                        filter.frequency.setValueAtTime(800 + Math.random() * 1200, now + delay);
+                        filter.Q.setValueAtTime(3 + Math.random() * 2, now + delay);
+
+                        const gain = audioCtx.createGain();
+                        const volume = Math.pow((numImpacts - i) / numImpacts, 1.5) * 0.25;
+                        gain.gain.setValueAtTime(volume, now + delay);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.03);
+
+                        noise.connect(filter);
+                        filter.connect(gain);
+                        gain.connect(audioCtx.destination);
+
+                        noise.start(now + delay);
+                        noise.stop(now + delay + 0.03);
                     }
                 } else if (type === 'coin') {
-                    // Coin metallic flip / ping
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.3);
-                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.3);
+                    // Realistic Coin Metallic Flip Ring (High metallic resonance ping)
+                    const now = audioCtx.currentTime;
+                    
+                    // Primary metal resonance ring (e.g. 4.2 kHz)
+                    const osc1 = audioCtx.createOscillator();
+                    const gain1 = audioCtx.createGain();
+                    osc1.type = 'sine';
+                    osc1.frequency.setValueAtTime(4180, now);
+                    gain1.gain.setValueAtTime(0.25, now);
+                    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+
+                    // Secondary harmonic metal overtone (e.g. 6.3 kHz)
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(6270, now);
+                    gain2.gain.setValueAtTime(0.15, now);
+                    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+
+                    osc1.connect(gain1);
+                    gain1.connect(audioCtx.destination);
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+
+                    osc1.start(now);
+                    osc1.stop(now + 0.6);
+                    osc2.start(now);
+                    osc2.stop(now + 0.4);
                 } else if (type === 'win') {
-                    // Victory landing chime
+                    // Soft Landing / Table Tap Chime
+                    const now = audioCtx.currentTime;
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
-                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.frequency.setValueAtTime(987.77, now); // B5 note landing
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
                     osc.connect(gain);
                     gain.connect(audioCtx.destination);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
                 }
             } catch(e) {
                 console.warn('Audio play restricted', e);
