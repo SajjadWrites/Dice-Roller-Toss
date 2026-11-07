@@ -1,0 +1,1009 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polyhedral Dice Roller & Coin Flipper</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+        }
+
+        /* 3D Perspective Container */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        /* 3D Coin Styles */
+        .coin-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.1s linear;
+            transform-style: preserve-3d;
+        }
+        .coin-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.3), 0 8px 20px rgba(0,0,0,0.3);
+        }
+        .coin-back {
+            transform: rotateY(180deg);
+        }
+
+        @keyframes coinFlipAnim {
+            0% { transform: rotateY(0deg) scale(1); }
+            50% { transform: rotateY(900deg) scale(1.4); }
+            100% { transform: rotateY(1800deg) scale(1); }
+        }
+
+        .flipping {
+            animation: coinFlipAnim 1.2s cubic-bezier(0.4, 0.2, 0.2, 1) forwards;
+        }
+
+        /* 3D Standard D6 Cube Styles */
+        .dice-cube {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.1s linear;
+        }
+
+        .dice-side {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(145deg, #ffffff, #e6e6e6);
+            border: 2px solid #d1d5db;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1), 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .dark .dice-side {
+            background: linear-gradient(145deg, #1f2937, #111827);
+            border-color: #374151;
+            box-shadow: inset 0 0 12px rgba(255,255,255,0.05), 0 6px 12px rgba(0,0,0,0.5);
+        }
+
+        .side-1 { transform: translateZ(40px); }
+        .side-2 { transform: rotateY(90deg) translateZ(40px); }
+        .side-3 { transform: rotateY(180deg) translateZ(40px); }
+        .side-4 { transform: rotateY(-90deg) translateZ(40px); }
+        .side-5 { transform: rotateX(90deg) translateZ(40px); }
+        .side-6 { transform: rotateX(-90deg) translateZ(40px); }
+
+        /* Polyhedral Non-D6 Dice Styling */
+        .poly-dice-shape {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: transform 0.1s ease;
+        }
+
+        @keyframes tumbleAnim {
+            0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(0.8); }
+            25% { transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg) scale(1.15); }
+            50% { transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg) scale(0.9); }
+            75% { transform: rotateX(1080deg) rotateY(540deg) rotateZ(270deg) scale(1.1); }
+            100% { transform: rotateX(1440deg) rotateY(720deg) rotateZ(360deg) scale(1); }
+        }
+
+        .tumbling {
+            animation: tumbleAnim 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen transition-colors duration-300 pb-12 overflow-x-hidden">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-dice-d20 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">RollMaster 3D</h1>
+                    <p class="text-xs text-slate-400">Polyhedral Dice & Coin Suite</p>
+                </div>
+            </div>
+
+            <!-- Global Controls -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <!-- Audio Sound Toggle -->
+                <button id="soundToggleBtn" onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition" title="Toggle Sound FX">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-indigo-400"></i>
+                </button>
+
+                <!-- Active Player Indicator Pill -->
+                <div class="hidden sm:flex items-center space-x-2 bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5">
+                    <span class="text-xs text-slate-400">Current:</span>
+                    <div id="headerActivePlayerBadge" class="flex items-center space-x-2">
+                        <!-- Dynamic active player JS insertion -->
+                    </div>
+                </div>
+
+                <!-- Mode Switcher Tabs -->
+                <div class="bg-slate-800 p-1 rounded-xl flex border border-slate-700/50">
+                    <button id="tabDiceBtn" onclick="switchMode('dice')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-indigo-600 text-white shadow-md">
+                        <i class="fa-solid fa-dice mr-1.5"></i> Dice
+                    </button>
+                    <button id="tabCoinBtn" onclick="switchMode('coin')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-coins mr-1.5"></i> Coins
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT & CENTER MAIN INTERACTIVE STAGE (8 cols) -->
+            <div class="lg:col-span-8 space-y-6">
+
+                <!-- Player Selection Bar -->
+                <div class="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-2xl p-4 shadow-xl">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center">
+                            <i class="fa-solid fa-users text-indigo-400 mr-2"></i> Active Roller
+                        </span>
+                        <button onclick="openAddPlayerModal()" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center">
+                            <i class="fa-solid fa-plus-circle mr-1"></i> Add Player
+                        </button>
+                    </div>
+
+                    <!-- Horizontal Scrollable Player Badges -->
+                    <div id="playerListContainer" class="flex items-center space-x-3 overflow-x-auto pb-1 scrollbar-none">
+                        <!-- Dynamic players populated here -->
+                    </div>
+                </div>
+
+                <!-- INTERACTIVE SECTION 1: DICE ROLLER -->
+                <div id="diceSection" class="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                    
+                    <!-- Control Settings Bar -->
+                    <div class="space-y-4 mb-6">
+                        <!-- Dice Type Selectors -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-2">SELECT DICE TYPE</label>
+                            <div class="grid grid-cols-4 sm:grid-cols-7 gap-2" id="diceTypeSelector">
+                                <button onclick="selectDiceType('D4')" data-type="D4" class="dice-type-btn p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-indigo-500 font-bold text-xs flex flex-col items-center justify-center transition">
+                                    <i class="fa-solid fa-play -rotate-90 text-amber-400 mb-1"></i> D4
+                                </button>
+                                <button onclick="selectDiceType('D6')" data-type="D6" class="dice-type-btn p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 font-bold text-xs flex flex-col items-center justify-center transition shadow-lg shadow-indigo-500/20">
+                                    <i class="fa-solid fa-cube text-indigo-400 mb-1"></i> D6
+                                </button>
+                                <button onclick="selectDiceType('D8')" data-type="D8" class="dice-type-btn p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-indigo-500 font-bold text-xs flex flex-col items-center justify-center transition">
+                                    <i class="fa-solid fa-diamond text-emerald-400 mb-1"></i> D8
+                                </button>
+                                <button onclick="selectDiceType('D10')" data-type="D10" class="dice-type-btn p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-indigo-500 font-bold text-xs flex flex-col items-center justify-center transition">
+                                    <i class="fa-solid fa-shield-halved text-cyan-400 mb-1"></i> D10
+                                </button>
+                                <button onclick="selectDiceType('D12')" data-type="D12" class="dice-type-btn p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-indigo-500 font-bold text-xs flex flex-col items-center justify-center transition">
+                                    <i class="fa-solid fa-square-full rotate-45 text-purple-400 mb-1 scale-75"></i> D12
+                                </button>
+                                <button onclick="selectDiceType('D20')" data-type="D20" class="dice-type-btn p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-indigo-500 font-bold text-xs flex flex-col items-center justify-center transition">
+                                    <i class="fa-solid fa-dice-d20 text-rose-400 mb-1"></i> D20
+                                </button>
+                                <button onclick="selectDiceType('D100')" data-type="D100" class="dice-type-btn p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-indigo-500 font-bold text-xs flex flex-col items-center justify-center transition">
+                                    <i class="fa-solid fa-percent text-yellow-400 mb-1"></i> D100
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Dice Quantity Picker & Quick Preset Buttons -->
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/50 p-3 rounded-xl border border-slate-700/40">
+                            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between">
+                                <span class="text-xs font-semibold text-slate-400">QUANTITY:</span>
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="adjustDiceCount(-1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-slate-200 border border-slate-600 transition">-</button>
+                                    <span id="diceCountDisplay" class="font-extrabold text-lg text-indigo-400 w-8 text-center">1</span>
+                                    <button onclick="adjustDiceCount(1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-slate-200 border border-slate-600 transition">+</button>
+                                </div>
+                            </div>
+                            <!-- Quick presets -->
+                            <div class="flex items-center space-x-1.5 w-full sm:w-auto justify-end">
+                                <span class="text-[10px] text-slate-500 font-bold uppercase mr-1">Presets:</span>
+                                <button onclick="setDiceCount(1)" class="px-2.5 py-1 text-xs rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold text-slate-300">1</button>
+                                <button onclick="setDiceCount(2)" class="px-2.5 py-1 text-xs rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold text-slate-300">2</button>
+                                <button onclick="setDiceCount(4)" class="px-2.5 py-1 text-xs rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold text-slate-300">4</button>
+                                <button onclick="setDiceCount(6)" class="px-2.5 py-1 text-xs rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold text-slate-300">6</button>
+                                <button onclick="setDiceCount(10)" class="px-2.5 py-1 text-xs rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 font-semibold text-slate-300">10</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Interactive Animation Stage -->
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-8 min-h-[300px] flex flex-col items-center justify-center relative perspective-1000 overflow-hidden shadow-inner">
+                        <!-- Dice Display Grid Container -->
+                        <div id="diceArena" class="flex flex-wrap items-center justify-center gap-6 max-w-full my-auto py-4">
+                            <!-- Animated Dice components inserted via JS -->
+                        </div>
+
+                        <!-- Action Roll Button -->
+                        <div class="mt-6 z-10 w-full sm:w-auto">
+                            <button id="rollDiceBtn" onclick="rollDice()" class="w-full sm:w-64 py-3.5 px-8 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-base rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform active:scale-95 transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-dice-three text-xl"></i>
+                                <span id="rollBtnText">ROLL DICE</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dice Results Display Banner -->
+                    <div id="diceResultsBanner" class="mt-6 p-4 rounded-xl bg-slate-900/90 border border-indigo-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-extrabold text-2xl">
+                                ∑
+                            </div>
+                            <div>
+                                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Sum</span>
+                                <div id="diceTotalDisplay" class="text-3xl font-black text-white">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Individual Dice Value Breakdown Pills -->
+                        <div class="flex-1 w-full sm:w-auto text-right">
+                            <span class="text-xs font-semibold text-slate-400 block mb-1">INDIVIDUAL BREAKDOWN</span>
+                            <div id="diceBreakdownContainer" class="flex flex-wrap justify-end gap-1.5">
+                                <span class="text-xs text-slate-500 italic">Ready to roll...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INTERACTIVE SECTION 2: COIN FLIPPER (Hidden by default) -->
+                <div id="coinSection" class="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-2xl p-6 shadow-xl hidden">
+                    
+                    <!-- Coin Quantity Controls -->
+                    <div class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-slate-700/40 mb-6">
+                        <span class="text-xs font-semibold text-slate-400">NUMBER OF COINS:</span>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="adjustCoinCount(-1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-slate-200 border border-slate-600 transition">-</button>
+                            <span id="coinCountDisplay" class="font-extrabold text-lg text-amber-400 w-8 text-center">1</span>
+                            <button onclick="adjustCoinCount(1)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-slate-200 border border-slate-600 transition">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Animated Coin Arena -->
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-8 min-h-[300px] flex flex-col items-center justify-center relative perspective-1000 shadow-inner">
+                        <div id="coinArena" class="flex flex-wrap items-center justify-center gap-8 max-w-full my-auto py-4">
+                            <!-- Coins dynamically injected -->
+                        </div>
+
+                        <div class="mt-8 z-10 w-full sm:w-auto">
+                            <button id="flipCoinBtn" onclick="flipCoins()" class="w-full sm:w-64 py-3.5 px-8 bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-white font-extrabold text-base rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 transform active:scale-95 transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-coins text-xl"></i>
+                                <span id="flipBtnText">FLIP COIN</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Coin Result Banner -->
+                    <div class="mt-6 p-4 rounded-xl bg-slate-900/90 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex space-x-2">
+                                <span class="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold text-sm">
+                                    <i class="fa-solid fa-crown mr-1"></i> Heads: <span id="headsCountDisplay">0</span>
+                                </span>
+                                <span class="px-3 py-1.5 rounded-lg bg-slate-700/30 border border-slate-600/40 text-slate-300 font-bold text-sm">
+                                    <i class="fa-solid fa-shield-cat mr-1"></i> Tails: <span id="tailsCountDisplay">0</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div id="coinOutcomeSummary" class="text-right text-sm font-semibold text-slate-300">
+                            Click flip to start!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SIDEBAR: ROLL HISTORY & PLAYER STATS (4 cols) -->
+            <div class="lg:col-span-4 space-y-6">
+
+                <!-- Roll History Card -->
+                <div class="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-2xl p-5 shadow-xl flex flex-col h-[620px]">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-700/60">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
+                            <h2 class="font-bold text-sm uppercase tracking-wider text-slate-200">Roll History</h2>
+                        </div>
+                        <button onclick="clearHistory()" class="text-xs text-slate-400 hover:text-rose-400 font-medium transition" title="Clear All History">
+                            <i class="fa-solid fa-trash-can mr-1"></i> Clear
+                        </button>
+                    </div>
+
+                    <!-- History Filter Tabs -->
+                    <div class="py-3 flex items-center justify-between gap-2 border-b border-slate-700/40">
+                        <span class="text-xs text-slate-400">Filter:</span>
+                        <select id="historyFilterSelect" onchange="renderHistory()" class="bg-slate-900 text-xs font-semibold border border-slate-700 rounded-lg px-2.5 py-1 text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <option value="ALL">Everyone</option>
+                            <!-- Dynamically loaded player list -->
+                        </select>
+                    </div>
+
+                    <!-- History Items List Container -->
+                    <div id="historyLogContainer" class="flex-1 overflow-y-auto pt-3 space-y-2.5 pr-1">
+                        <!-- Dynamic History Feed Elements -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Add New Player -->
+    <div id="addPlayerModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl transform scale-95 transition-transform duration-200" id="addPlayerModalCard">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg text-white flex items-center">
+                    <i class="fa-solid fa-user-plus text-indigo-400 mr-2"></i> Add New Player
+                </h3>
+                <button onclick="closeAddPlayerModal()" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">PLAYER NAME</label>
+                    <input type="text" id="newPlayerNameInput" placeholder="e.g. Gandalf" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-2">CHOOSE COLOR</label>
+                    <div class="flex items-center space-x-3" id="colorPickerOptions">
+                        <button onclick="selectColorChoice('#6366f1')" class="color-opt w-8 h-8 rounded-full bg-indigo-500 ring-2 ring-white transition"></button>
+                        <button onclick="selectColorChoice('#ec4899')" class="color-opt w-8 h-8 rounded-full bg-pink-500 transition"></button>
+                        <button onclick="selectColorChoice('#10b981')" class="color-opt w-8 h-8 rounded-full bg-emerald-500 transition"></button>
+                        <button onclick="selectColorChoice('#f59e0b')" class="color-opt w-8 h-8 rounded-full bg-amber-500 transition"></button>
+                        <button onclick="selectColorChoice('#8b5cf6')" class="color-opt w-8 h-8 rounded-full bg-purple-500 transition"></button>
+                        <button onclick="selectColorChoice('#06b6d4')" class="color-opt w-8 h-8 rounded-full bg-cyan-500 transition"></button>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end space-x-3">
+                    <button onclick="closeAddPlayerModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition">Cancel</button>
+                    <button onclick="saveNewPlayer()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30">Create Player</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        /* State Management */
+        let activeMode = 'dice'; // 'dice' | 'coin'
+        let soundEnabled = true;
+        let selectedDiceType = 'D6';
+        let diceCount = 1;
+        let coinCount = 1;
+        let isRolling = false;
+        let selectedColor = '#6366f1';
+
+        // Predefined Players list
+        let players = [
+            { id: 'p1', name: 'Player 1', color: '#6366f1', icon: 'fa-user-ninja' },
+            { id: 'p2', name: 'Player 2', color: '#ec4899', icon: 'fa-user-astronaut' }
+        ];
+        let activePlayerId = 'p1';
+
+        // History list
+        let rollHistory = [];
+
+        /* Web Audio Synthesizer sound generator */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSynthesizedSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                if (type === 'dice') {
+                    // Dice clatter noise synthesized effect
+                    for (let i = 0; i < 4; i++) {
+                        setTimeout(() => {
+                            const osc = audioCtx.createOscillator();
+                            const gain = audioCtx.createGain();
+                            osc.type = 'triangle';
+                            osc.frequency.setValueAtTime(200 + Math.random() * 300, audioCtx.currentTime);
+                            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                            osc.connect(gain);
+                            gain.connect(audioCtx.destination);
+                            osc.start();
+                            osc.stop(audioCtx.currentTime + 0.08);
+                        }, i * 150 + Math.random() * 50);
+                    }
+                } else if (type === 'coin') {
+                    // Coin metallic flip / ping
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'win') {
+                    // Victory landing chime
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                }
+            } catch(e) {
+                console.warn('Audio play restricted', e);
+            }
+        }
+
+        /* Initial Setup */
+        window.addEventListener('DOMContentLoaded', () => {
+            renderPlayers();
+            renderDiceArena();
+            renderCoinArena();
+            renderHistory();
+        });
+
+        /* Toggle Audio */
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            if (soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-indigo-400';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+            }
+        }
+
+        /* Switch Mode (Dice / Coin) */
+        function switchMode(mode) {
+            activeMode = mode;
+            const diceSec = document.getElementById('diceSection');
+            const coinSec = document.getElementById('coinSection');
+            const tabDice = document.getElementById('tabDiceBtn');
+            const tabCoin = document.getElementById('tabCoinBtn');
+
+            if (mode === 'dice') {
+                diceSec.classList.remove('hidden');
+                coinSec.classList.add('hidden');
+                tabDice.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-indigo-600 text-white shadow-md';
+                tabCoin.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white';
+            } else {
+                diceSec.classList.add('hidden');
+                coinSec.classList.remove('hidden');
+                tabCoin.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-amber-600 text-white shadow-md';
+                tabDice.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white';
+            }
+        }
+
+        /* Render Player Chips & Selectors */
+        function renderPlayers() {
+            const container = document.getElementById('playerListContainer');
+            const filterSelect = document.getElementById('historyFilterSelect');
+            const headerBadge = document.getElementById('headerActivePlayerBadge');
+            
+            container.innerHTML = '';
+            
+            // Keep active option selected on filter rebuild
+            const currentFilter = filterSelect.value;
+            filterSelect.innerHTML = `<option value="ALL">Everyone</option>`;
+
+            players.forEach(player => {
+                const isActive = player.id === activePlayerId;
+                
+                // Add to bar
+                const wrapper = document.createElement('div');
+                wrapper.className = `flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition flex-shrink-0 ${
+                    isActive 
+                    ? 'border-indigo-500 bg-indigo-500/10 text-white ring-2 ring-indigo-500/30' 
+                    : 'border-slate-700/60 bg-slate-900/60 text-slate-400 hover:text-slate-200'
+                }`;
+
+                wrapper.innerHTML = `
+                    <button onclick="setActivePlayer('${player.id}')" class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${player.color}"></span>
+                        <span id="player_name_span_${player.id}">${escapeHtml(player.name)}</span>
+                        ${isActive ? '<i class="fa-solid fa-check text-[10px] text-indigo-400 ml-1"></i>' : ''}
+                    </button>
+                    <button onclick="editPlayerName('${player.id}', event)" class="text-slate-500 hover:text-indigo-400 ml-1 transition" title="Edit Name">
+                        <i class="fa-solid fa-pen text-[10px]"></i>
+                    </button>
+                `;
+                container.appendChild(wrapper);
+
+                // Add to filter dropdown
+                const opt = document.createElement('option');
+                opt.value = player.id;
+                opt.textContent = player.name;
+                filterSelect.appendChild(opt);
+            });
+
+            filterSelect.value = currentFilter || 'ALL';
+
+            // Active player header display
+            const activePlayer = players.find(p => p.id === activePlayerId) || players[0];
+            headerBadge.innerHTML = `
+                <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${activePlayer.color}"></span>
+                <span class="text-xs font-bold text-slate-200">${escapeHtml(activePlayer.name)}</span>
+            `;
+        }
+
+        function setActivePlayer(id) {
+            activePlayerId = id;
+            renderPlayers();
+        }
+
+        /* Edit Player Name Prompt */
+        function editPlayerName(id, e) {
+            if (e) e.stopPropagation();
+            const player = players.find(p => p.id === id);
+            if (!player) return;
+
+            const newName = prompt('Enter new player name:', player.name);
+            if (newName !== null && newName.trim() !== '') {
+                player.name = newName.trim();
+                renderPlayers();
+                renderHistory();
+            }
+        }
+
+        /* Modal Player Management */
+        function openAddPlayerModal() {
+            const modal = document.getElementById('addPlayerModal');
+            const card = document.getElementById('addPlayerModalCard');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                card.classList.remove('scale-95');
+                card.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeAddPlayerModal() {
+            const modal = document.getElementById('addPlayerModal');
+            const card = document.getElementById('addPlayerModalCard');
+            modal.classList.add('opacity-0');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function selectColorChoice(color) {
+            selectedColor = color;
+            document.querySelectorAll('.color-opt').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-white');
+            });
+            event.target.classList.add('ring-2', 'ring-white');
+        }
+
+        function saveNewPlayer() {
+            const input = document.getElementById('newPlayerNameInput');
+            const name = input.value.trim();
+            if (!name) return;
+
+            const newId = 'p_' + Date.now();
+            players.push({
+                id: newId,
+                name: name,
+                color: selectedColor,
+                icon: 'fa-user'
+            });
+
+            input.value = '';
+            activePlayerId = newId;
+            renderPlayers();
+            closeAddPlayerModal();
+        }
+
+        /* DICE ROLLER LOGIC */
+        function selectDiceType(type) {
+            selectedDiceType = type;
+            document.querySelectorAll('.dice-type-btn').forEach(btn => {
+                if (btn.dataset.type === type) {
+                    btn.className = 'dice-type-btn p-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 font-bold text-xs flex flex-col items-center justify-center transition shadow-lg shadow-indigo-500/20 text-white';
+                } else {
+                    btn.className = 'dice-type-btn p-2.5 rounded-xl border border-slate-700 bg-slate-900/60 hover:border-indigo-500 font-bold text-xs flex flex-col items-center justify-center transition text-slate-300';
+                }
+            });
+            renderDiceArena();
+        }
+
+        function adjustDiceCount(delta) {
+            const newCount = diceCount + delta;
+            if (newCount >= 1 && newCount <= 10) {
+                diceCount = newCount;
+                document.getElementById('diceCountDisplay').textContent = diceCount;
+                renderDiceArena();
+            }
+        }
+
+        function setDiceCount(val) {
+            diceCount = val;
+            document.getElementById('diceCountDisplay').textContent = diceCount;
+            renderDiceArena();
+        }
+
+        function getMaxValForType(type) {
+            return parseInt(type.replace('D', ''), 10) || 6;
+        }
+
+        function renderDiceArena() {
+            const arena = document.getElementById('diceArena');
+            arena.innerHTML = '';
+
+            for (let i = 0; i < diceCount; i++) {
+                if (selectedDiceType === 'D6') {
+                    // Build 3D Cube HTML
+                    const cube = document.createElement('div');
+                    cube.className = 'dice-cube';
+                    cube.id = `dice_elem_${i}`;
+                    cube.innerHTML = `
+                        <div class="dice-side side-1">${createDotsHTML(1)}</div>
+                        <div class="dice-side side-2">${createDotsHTML(2)}</div>
+                        <div class="dice-side side-3">${createDotsHTML(3)}</div>
+                        <div class="dice-side side-4">${createDotsHTML(4)}</div>
+                        <div class="dice-side side-5">${createDotsHTML(5)}</div>
+                        <div class="dice-side side-6">${createDotsHTML(6)}</div>
+                    `;
+                    arena.appendChild(cube);
+                } else {
+                    // Non D6 Polyhedral visual shape
+                    const poly = document.createElement('div');
+                    poly.className = 'poly-dice-shape bg-gradient-to-tr from-indigo-700 to-violet-600 border-2 border-indigo-400 rounded-2xl shadow-xl text-white font-extrabold text-2xl';
+                    poly.id = `dice_elem_${i}`;
+                    poly.innerHTML = `<span>${getMaxValForType(selectedDiceType)}</span>`;
+                    arena.appendChild(poly);
+                }
+            }
+        }
+
+        // Helper to generate classic D6 dots layout
+        function createDotsHTML(val) {
+            const dotsMap = {
+                1: '<div class="w-4 h-4 bg-indigo-500 rounded-full shadow"></div>',
+                2: '<div class="w-full h-full p-3 flex justify-between"><div class="w-3.5 h-3.5 bg-slate-800 dark:bg-white rounded-full"></div><div class="w-3.5 h-3.5 bg-slate-800 dark:bg-white rounded-full self-end"></div></div>',
+                3: '<div class="w-full h-full p-3 flex justify-between"><div class="w-3.5 h-3.5 bg-slate-800 dark:bg-white rounded-full"></div><div class="w-3.5 h-3.5 bg-slate-800 dark:bg-white rounded-full self-center"></div><div class="w-3.5 h-3.5 bg-slate-800 dark:bg-white rounded-full self-end"></div></div>',
+                4: '<div class="w-full h-full p-3 grid grid-cols-2 gap-3 place-items-center"><div class="w-3.5 h-3.5 bg-slate-800 dark:bg-white rounded-full"></div><div class="w-3.5 h-3.5 bg-slate-800 dark:bg-white rounded-full"></div><div class="w-3.5 h-3.5 bg-slate-800 dark:bg-white rounded-full"></div><div class="w-3.5 h-3.5 bg-slate-800 dark:bg-white rounded-full"></div></div>',
+                5: '<div class="w-full h-full p-2.5 grid grid-cols-3 gap-1.5 place-items-center"><div class="w-3 h-3 bg-slate-800 dark:bg-white rounded-full"></div><div></div><div class="w-3 h-3 bg-slate-800 dark:bg-white rounded-full"></div><div></div><div class="w-3 h-3 bg-slate-800 dark:bg-white rounded-full"></div><div></div><div class="w-3 h-3 bg-slate-800 dark:bg-white rounded-full"></div><div></div><div class="w-3 h-3 bg-slate-800 dark:bg-white rounded-full"></div></div>',
+                6: '<div class="w-full h-full p-3 grid grid-cols-2 gap-y-1.5 place-items-center"><div class="w-3 h-3 bg-slate-800 dark:bg-white rounded-full"></div><div class="w-3 h-3 bg-slate-800 dark:bg-white rounded-full"></div><div class="w-3 h-3 bg-slate-800 dark:bg-white rounded-full"></div><div class="w-3 h-3 bg-slate-800 dark:bg-white rounded-full"></div><div class="w-3 h-3 bg-slate-800 dark:bg-white rounded-full"></div><div class="w-3 h-3 bg-slate-800 dark:bg-white rounded-full"></div></div>'
+            };
+            return dotsMap[val] || '';
+        }
+
+        /* Rotation maps for D6 faces */
+        const d6Rotations = {
+            1: 'rotateX(0deg) rotateY(0deg)',
+            2: 'rotateX(0deg) rotateY(-90deg)',
+            3: 'rotateX(0deg) rotateY(-180deg)',
+            4: 'rotateX(0deg) rotateY(90deg)',
+            5: 'rotateX(-90deg) rotateY(0deg)',
+            6: 'rotateX(90deg) rotateY(0deg)'
+        };
+
+        function rollDice() {
+            if (isRolling) return;
+            isRolling = true;
+            playSynthesizedSound('dice');
+
+            const btn = document.getElementById('rollDiceBtn');
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            document.getElementById('rollBtnText').textContent = 'ROLLING...';
+
+            const maxVal = getMaxValForType(selectedDiceType);
+            const results = [];
+
+            for (let i = 0; i < diceCount; i++) {
+                const finalValue = Math.floor(Math.random() * maxVal) + 1;
+                results.push(finalValue);
+
+                const diceElem = document.getElementById(`dice_elem_${i}`);
+                if (!diceElem) continue;
+
+                if (selectedDiceType === 'D6') {
+                    // Random extra full rotations for 3D tumbling effect
+                    const extraX = (Math.floor(Math.random() * 4) + 4) * 360;
+                    const extraY = (Math.floor(Math.random() * 4) + 4) * 360;
+                    
+                    const baseRot = d6Rotations[finalValue];
+                    diceElem.style.transition = 'transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                    diceElem.style.transform = `rotateX(${extraX}deg) rotateY(${extraY}deg) ${baseRot}`;
+                } else {
+                    diceElem.classList.remove('tumbling');
+                    void diceElem.offsetWidth; // Trigger reflow
+                    diceElem.classList.add('tumbling');
+
+                    setTimeout(() => {
+                        diceElem.querySelector('span').textContent = finalValue;
+                    }, 600);
+                }
+            }
+
+            // Finish Animation callback
+            setTimeout(() => {
+                isRolling = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                document.getElementById('rollBtnText').textContent = 'ROLL DICE';
+                playSynthesizedSound('win');
+
+                displayDiceResults(results);
+                addHistoryRecord('DICE', {
+                    diceType: selectedDiceType,
+                    count: diceCount,
+                    results: results,
+                    total: results.reduce((a, b) => a + b, 0)
+                });
+            }, 1250);
+        }
+
+        function displayDiceResults(results) {
+            const sum = results.reduce((a, b) => a + b, 0);
+            document.getElementById('diceTotalDisplay').textContent = sum;
+
+            const breakdown = document.getElementById('diceBreakdownContainer');
+            breakdown.innerHTML = results.map(val => `
+                <span class="px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-bold text-xs">
+                    ${val}
+                </span>
+            `).join('');
+        }
+
+
+        /* COIN FLIPPER LOGIC */
+        function adjustCoinCount(delta) {
+            const newCount = coinCount + delta;
+            if (newCount >= 1 && newCount <= 5) {
+                coinCount = newCount;
+                document.getElementById('coinCountDisplay').textContent = coinCount;
+                renderCoinArena();
+            }
+        }
+
+        function renderCoinArena() {
+            const arena = document.getElementById('coinArena');
+            arena.innerHTML = '';
+
+            for (let i = 0; i < coinCount; i++) {
+                const coin = document.createElement('div');
+                coin.className = 'w-24 h-24 perspective-1000';
+                coin.innerHTML = `
+                    <div id="coin_elem_${i}" class="coin-inner">
+                        <div class="coin-face bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-500 text-amber-950 font-black text-xl border-4 border-yellow-200">
+                            <div class="flex flex-col items-center">
+                                <i class="fa-solid fa-crown text-2xl"></i>
+                                <span class="text-[10px] tracking-widest uppercase mt-0.5">HEADS</span>
+                            </div>
+                        </div>
+                        <div class="coin-face coin-back bg-gradient-to-tr from-slate-300 via-slate-100 to-slate-400 text-slate-800 font-black text-xl border-4 border-slate-200">
+                            <div class="flex flex-col items-center">
+                                <i class="fa-solid fa-shield-cat text-2xl"></i>
+                                <span class="text-[10px] tracking-widest uppercase mt-0.5">TAILS</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                arena.appendChild(coin);
+            }
+        }
+
+        function flipCoins() {
+            if (isRolling) return;
+            isRolling = true;
+            playSynthesizedSound('coin');
+
+            const btn = document.getElementById('flipCoinBtn');
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            document.getElementById('flipBtnText').textContent = 'FLIPPING...';
+
+            const results = []; // 'HEADS' or 'TAILS'
+
+            for (let i = 0; i < coinCount; i++) {
+                const isHeads = Math.random() < 0.5;
+                const outcome = isHeads ? 'HEADS' : 'TAILS';
+                results.push(outcome);
+
+                const coinInner = document.getElementById(`coin_elem_${i}`);
+                if (!coinInner) continue;
+
+                coinInner.classList.remove('flipping');
+                void coinInner.offsetWidth; // Reflow
+                
+                // CSS Rotate calculation based on outcome
+                const targetDegree = isHeads ? 1800 : 1980; // 1800deg = Heads (0deg front), 1980deg = Tails (180deg back)
+                coinInner.style.transition = 'transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                coinInner.style.transform = `rotateY(${targetDegree}deg)`;
+            }
+
+            setTimeout(() => {
+                isRolling = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                document.getElementById('flipBtnText').textContent = 'FLIP COIN';
+                playSynthesizedSound('win');
+
+                displayCoinResults(results);
+                addHistoryRecord('COIN', {
+                    count: coinCount,
+                    results: results
+                });
+            }, 1250);
+        }
+
+        function displayCoinResults(results) {
+            const headsCount = results.filter(r => r === 'HEADS').length;
+            const tailsCount = results.filter(r => r === 'TAILS').length;
+
+            document.getElementById('headsCountDisplay').textContent = headsCount;
+            document.getElementById('tailsCountDisplay').textContent = tailsCount;
+
+            const summary = document.getElementById('coinOutcomeSummary');
+            summary.innerHTML = `<span class="text-amber-400 font-bold">${headsCount} Heads</span>, <span class="text-slate-300 font-bold">${tailsCount} Tails</span>`;
+        }
+
+
+        /* ROLL HISTORY MANAGEMENT */
+        function addHistoryRecord(category, data) {
+            const activePlayer = players.find(p => p.id === activePlayerId) || players[0];
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            const item = {
+                id: 'h_' + Date.now(),
+                playerId: activePlayer.id,
+                playerName: activePlayer.name,
+                playerColor: activePlayer.color,
+                category: category,
+                data: data,
+                timestamp: timeStr
+            };
+
+            rollHistory.unshift(item);
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyLogContainer');
+            const filterVal = document.getElementById('historyFilterSelect').value;
+
+            const filteredHistory = filterVal === 'ALL' 
+                ? rollHistory 
+                : rollHistory.filter(h => h.playerId === filterVal);
+
+            if (filteredHistory.length === 0) {
+                container.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-slate-500 py-12">
+                        <i class="fa-solid fa-dice-d6 text-3xl mb-2 opacity-40"></i>
+                        <p class="text-xs">No roll history recorded yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredHistory.map(item => {
+                let detailsHTML = '';
+                if (item.category === 'DICE') {
+                    detailsHTML = `
+                        <div class="flex items-center justify-between mt-1.5">
+                            <span class="text-xs text-slate-400 font-semibold">${item.data.count}x ${item.data.diceType}: [${item.data.results.join(', ')}]</span>
+                            <span class="text-sm font-extrabold text-indigo-400">Total: ${item.data.total}</span>
+                        </div>
+                    `;
+                } else {
+                    detailsHTML = `
+                        <div class="flex items-center justify-between mt-1.5">
+                            <span class="text-xs text-slate-400 font-semibold">${item.data.count} Coin(s)</span>
+                            <span class="text-xs font-bold text-amber-400">${item.data.results.join(', ')}</span>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="bg-slate-900/80 border border-slate-700/50 rounded-xl p-3 text-left transition hover:border-slate-600">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${item.playerColor}"></span>
+                                <span class="text-xs font-bold text-slate-200">${escapeHtml(item.playerName)}</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 font-medium">${item.timestamp}</span>
+                        </div>
+                        ${detailsHTML}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearHistory() {
+            rollHistory = [];
+            renderHistory();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+    </script>
+</body>
+</html>
+```
